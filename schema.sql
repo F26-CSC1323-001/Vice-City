@@ -15,7 +15,7 @@ CREATE TABLE lockers (
     lock_status TEXT NOT NULL DEFAULT 'locked'
 );
 
--- keeps track of who rented which locker and for how long
+-- keeps track of who rented which locker and for how long.
 CREATE TABLE rentals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
