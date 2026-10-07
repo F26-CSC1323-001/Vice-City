@@ -1,34 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vice City</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header>
-      <nav>
-        <div class="logo">Vice City</div>
-        <ul>
-          <li><a href="#">Home</a></li>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Services</a></li>
-          <li><a href="#">Contact</a></li>
-        </ul>
-      </nav>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Locker Room</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <main class="frame">
+    <!-- Header with Logo and Navigation -->
+    <header class="top">
+      <div class="logo">
+        <div class="logo-mark">🔒</div>
+        <span>SMARTLOCK</span>
+      </div>
+      <div class="top-right">
+        <span class="dot"></span>
+        <span class="cap muted">System online</span>
+        <button id="homeBtn" class="btn secondary home" data-go="welcome" hidden>
+          🏠 Home
+        </button>
+      </div>
     </header>
 
-    <main>
-      <section class="hero">
-        <h1>Welcome to Vice City</h1>
-        <p>Your modern landing page starts here.</p>
-        <button>Get Started</button>
-      </section>
-    </main>
+    <!-- Screen 1: Welcome Screen -->
+    <section class="screen active" data-screen="welcome">
+      <div class="split">
+        <div class="hero">
+          <div class="pill">Secure self-service storage</div>
+          <h1 class="title">Smart Locker Room</h1>
+          <p class="subtitle muted">Choose how you'd like to continue</p>
+        </div>
+        <div class="actions">
+          <button class="btn primary lg" data-go="home">👤 Customer</button>
+          <button class="btn secondary lg" data-go="admin-login">🛡️ Administrator</button>
+        </div>
+      </div>
+    </section>
 
-    <footer>
-      <p>© 2026 Vice City. All rights reserved.</p>
-    </footer>
-  </body>
+    <!-- Screen 2: Home Screen -->
+    <section class="screen" data-screen="home">
+      <div class="split">
+        <div class="hero">
+          <div class="pill">Secure self-service storage</div>
+          <h1 class="title">Smart Locker Room</h1>
+          <p class="subtitle muted">Store your things securely</p>
+        </div>
+        <div class="actions">
+          <button class="btn primary lg" data-go="choose-locker">Rent a Locker</button>
+          <button class="btn secondary lg" data-go="login">Open My Locker</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 3: Choose Locker -->
+    <section class="screen compact" data-screen="choose-locker">
+      <div class="col wide">
+        <h1 class="title center" id="chooseTitle">Choose a Locker</h1>
+        
+        <!-- View when lockers are available -->
+        <div id="chooseOk" class="col-fill">
+          <p class="cap muted center" id="availCount"></p>
+          <div class="grid2 mt4" id="lockerGrid"></div>
+          <div class="nav">
+            <button class="btn ghost" data-go="home">Back</button>
+            <button class="btn primary md w-next" id="chooseNext" data-go="details">Next</button>
+          </div>
+        </div>
+
+        <!-- View when no lockers are available -->
+        <div id="chooseNone" class="empty" hidden>
+          <div class="panel">
+            <p class="body strong">🔒 All lockers are currently in use</p>
+            <div id="earliestBox">
+              <p class="cap muted">Earliest availability in</p>
+              <div class="price accent" id="earliest"></div>
+              <p class="cap muted" id="earliestAt"></p>
+            </div>
+          </div>
+          <button class="btn secondary md w-done" data-go="home">Back to Options</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 4: User Details Form -->
+    <section class="screen compact" data-screen="details">
+      <div class="col form">
+        <div class="row">
+          <h1 class="title">Your Details</h1>
+          <span class="pill" id="detailsLocker"></span>
+        </div>
+        <div class="grid2 mt5 gap4">
+          <div class="field">
+            <label class="label">Name</label>
+            <div class="box"></div>
+          </div>
+          <div class="field">
+            <label class="label">Phone Number</label>
+            <div class="box"></div>
+          </div>
+          <div class="field span2">
+            <label class="label">Create a PIN (4-6 digits)</label>
+            <div class="box"></div>
+          </div>
+        </div>
+        <div class="nav">
+          <button class="btn ghost" data-go="choose-locker">Back</button>
+          <button class="btn primary md w-next" data-go="duration">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 5: Select Rental Duration -->
+    <section class="screen compact" data-screen="duration">
+      <div class="col wide">
+        <h1 class="title center">How long do you need it?</h1>
+        <div class="grid2 mt4 gap2" id="durations"></div>
+        <div class="bar">
+          <div>
+            <div class="cap upper muted">Total</div>
+            <div class="price" id="total"></div>
+          </div>
+          <button class="btn primary md w-pay" data-go="payment">Pay</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 6: Payment Screen -->
+    <section class="screen compact" data-screen="payment">
+      <div class="center-col">
+        <h1 class="title">Tap your card to pay</h1>
+        <div class="pay-icon mt5">📶</div>
+        <div class="price mt4">Total: <span id="payTotal"></span></div>
+        <p class="cap muted">Demo card only. No real payment.</p>
+      </div>
+    </section>
+
+    <!-- Screen 7: Success Screen -->
+    <section class="screen compact" data-screen="success">
+      <div class="col success">
+        <div class="badge-circle">✓</div>
+        <h1 class="title mt2" id="sTitle"></h1>
+        <p class="body muted">Put your items inside and close the door. It will lock automatically.</p>
+        <div class="panel inline mt2">
+          <div>
+            <div class="cap upper muted">Rental ends</div>
+            <div class="price accent" id="sEnd"></div>
+          </div>
+          <div class="sep"></div>
+          <div>
+            <div class="cap upper muted">Duration</div>
+            <div class="body strong" id="sDur"></div>
+          </div>
+        </div>
+        <button class="btn primary md w-done" style="margin-top:auto" data-go="welcome">Done</button>
+      </div>
+    </section>
+
+    <!-- Screen 8: Customer Login -->
+    <section class="screen compact" data-screen="login">
+      <div class="col form">
+        <h1 class="title center">Welcome back</h1>
+        <div class="grid mt6 gap4">
+          <div class="field">
+            <label class="label">Phone Number</label>
+            <div class="box">318-555-0142</div>
+          </div>
+          <div class="field">
+            <label class="label">PIN</label>
+            <div class="box">••••</div>
+          </div>
+        </div>
+        <div class="nav">
+          <button class="btn ghost" data-go="forgot">Forgot PIN?</button>
+          <button class="btn primary md w-next" data-go="rental">Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 9: Active Rental Dashboard -->
+    <section class="screen" data-screen="rental">
+      <div class="col wide">
+        <div class="row end">
+          <h1 class="title" id="rTitle"></h1>
+          <span class="pill lg-pill" id="rBadge"></span>
+        </div>
+        <div class="panel mt4 big">
+          <div>
+            <div class="cap upper muted">Time remaining</div>
+            <div class="timer" id="rTime"></div>
+          </div>
+          <div class="right">
+            <div class="cap upper muted">Rental ends</div>
+            <div class="price accent" id="rEnd"></div>
+          </div>
+        </div>
+        <div class="grid3 nav-auto">
+          <button class="btn primary lg" id="doorBtn" data-act="door">Unlock</button>
+          <button class="btn secondary lg" data-go="extend">Extend</button>
+          <button class="btn danger lg" id="endBtn" data-act="endhome">End Rental</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 10: Extend Rental Duration -->
+    <section class="screen compact" data-screen="extend">
+      <div class="col wide">
+        <div class="row">
+          <h1 class="title">Extend Rental</h1>
+          <span class="pill" id="extBadge"></span>
+        </div>
+        <p class="cap muted">How much extra time do you need?</p>
+        <div class="grid2 mt3 gap2" id="extDurations"></div>
+        <div class="bar">
+          <div>
+            <div class="cap upper muted">Extension cost</div>
+            <div class="price" id="extTotal"></div>
+          </div>
+          <button class="btn primary md w-pay" data-go="extend-payment">Pay</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 11: Extend Payment -->
+    <section class="screen compact" data-screen="extend-payment">
+      <div class="center-col">
+        <h1 class="title">Tap your card to pay</h1>
+        <div class="pay-icon mt5">📶</div>
+        <div class="price mt4">Extension: <span id="exPayTotal"></span></div>
+        <p class="cap muted" id="exPayNote"></p>
+        <p class="cap muted">Demo card only. No real payment.</p>
+      </div>
+    </section>
+
+    <!-- Screen 12: Forgot PIN Screen -->
+    <section class="screen" data-screen="forgot">
+      <div class="center-col">
+        <div class="badge-circle outline">?</div>
+        <h1 class="title mt4">Forgot your PIN?</h1>
+        <p class="subtitle muted mt3" id="forgotText"></p>
+        <button class="btn primary md w-done mt7" id="contactBtn" data-act="contact">Contact Admin</button>
+      </div>
+    </section>
+
+    <!-- Screen 13: Administrator Login -->
+    <section class="screen compact" data-screen="admin-login">
+      <div class="col form">
+        <div class="center">
+          <div class="badge-circle tint">🛡️</div>
+          <h1 class="title center">Administrator Login</h1>
+        </div>
+        <div class="grid2 mt5 gap4">
+          <div class="field">
+            <label class="label">Username</label>
+            <div class="box"></div>
+          </div>
+          <div class="field">
+            <label class="label">Password</label>
+            <div class="box"></div>
+          </div>
+        </div>
+        <button class="btn primary md w-done" style="margin:auto auto 0" data-go="admin">Sign In</button>
+      </div>
+    </section>
+
+    <!-- Screen 14: Administrator Dashboard -->
+    <section class="screen compact" data-screen="admin">
+      <div class="col-fill">
+        <div class="row">
+          <h1 class="title">Administrator</h1>
+          <span class="cap muted" id="adminCount"></span>
+        </div>
+        <div class="grid2 mt3" id="adminGrid" style="flex:1"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
 </html>
