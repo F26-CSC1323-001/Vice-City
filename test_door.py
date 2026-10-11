@@ -1,4 +1,4 @@
-import Rpi.GPIO as GPIO 
+import RPi.GPIO as GPIO 
 import time 
 # tests the magnetic door switch by itself
 #move magnet near/away from switch

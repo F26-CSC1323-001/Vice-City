@@ -3,9 +3,11 @@ import sqlite3
 # opens the database
 connection = sqlite3.connect("locker.db")
 
-# adds two lockers
+# adds four lockers
 connection.execute("INSERT INTO lockers (locker_number) VALUES (1)")
 connection.execute("INSERT INTO lockers (locker_number) VALUES (2)")
+connection.execute("INSERT INTO lockers (locker_number) VALUES (3)")
+connection.execute("INSERT INTO lockers (locker_number) VALUES (4)")
 
 # adds one demo payment card.
 connection.execute(

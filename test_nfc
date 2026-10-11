@@ -6,4 +6,3 @@ reader = SimpleMFRC522()
 print("Tap a card")
 uid = reader.read_id() #waits until a card is tapped
 print("Card UID:", uid)
- 
