@@ -16,9 +16,6 @@ const DURATIONS = [
   ["All day", "$12.00", 1440, "allday"]
 ];
 
-// The demo card used for every payment (same card that seed_db.py creates)
-const DEMO_CARD_UID = "CARD001";
-
 // Helper to get price string by duration name
 function getPrice(durationName) {
   for (let i = 0; i < DURATIONS.length; i = i + 1) {
@@ -66,7 +63,8 @@ const state = {
   lockers: [] // filled in with real data from the back end
 };
 
-let timerTimeout = null;
+// Goes up every time the screen changes, so a card scan from an old screen knows to stop
+let scanNumber = 0;
 
 // ---------- Talking to the back end ----------
 
@@ -479,7 +477,6 @@ async function submitRental() {
     phone: state.phone,
     pin: state.pin,
     duration: getServerName(state.duration),
-    card_uid: DEMO_CARD_UID,
     locker_number: Number(state.selectedLockerId)
   });
 
@@ -513,8 +510,7 @@ async function submitExtension() {
   const result = await callServer("/extend-rental", "POST", {
     phone: state.phone,
     pin: state.pin,
-    duration: getServerName(state.extendDuration),
-    card_uid: DEMO_CARD_UID
+    duration: getServerName(state.extendDuration)
   });
 
   if (state.screen !== "extend-payment") {
@@ -531,9 +527,38 @@ async function submitExtension() {
   goToScreen("rental");
 }
 
+// Waits for the given number of milliseconds
+function pause(milliseconds) {
+  return new Promise(function(resolve) {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+// Keeps asking the back end for a tap until any card is tapped or the customer leaves this screen
+async function waitForTap(afterTap) {
+  const thisScan = scanNumber;
+
+  while (thisScan === scanNumber) {
+    const result = await callServer("/scan-card", "POST");
+
+    // the customer left this screen while we were waiting
+    if (thisScan !== scanNumber) {
+      return;
+    }
+
+    if (!result.ok) {
+      showError(result);
+      await pause(2000);
+    } else if (result.data.tapped) {
+      afterTap();
+      return;
+    }
+  }
+}
+
 // Function to handle switching screens
 function goToScreen(screenName) {
-  clearTimeout(timerTimeout);
+  scanNumber = scanNumber + 1;
   state.screen = screenName;
   hideKeyboard();
 
@@ -574,18 +599,13 @@ function goToScreen(screenName) {
     loadLockers("/lockers", true);
   }
 
-  // Automatic transition after payment
+  // Wait for a card tap on the payment screens
   if (screenName === "payment") {
-    timerTimeout = setTimeout(function() {
-      submitRental();
-    }, 2000);
+    waitForTap(submitRental);
   }
 
-  // Automatic transition after extension payment
   if (screenName === "extend-payment") {
-    timerTimeout = setTimeout(function() {
-      submitExtension();
-    }, 2000);
+    waitForTap(submitExtension);
   }
 
   render();

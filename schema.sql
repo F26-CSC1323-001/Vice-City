@@ -27,10 +27,3 @@ CREATE TABLE rentals (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (locker_id) REFERENCES lockers(id)
 );
-
--- demo cards can be used to test payments
-CREATE TABLE demo_cards (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    card_uid TEXT NOT NULL UNIQUE,
-    balance REAL NOT NULL DEFAULT 25.00
-);

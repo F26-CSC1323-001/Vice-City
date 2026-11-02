@@ -5,6 +5,8 @@ from flask import Flask, jsonify, request
 from flask import Flask, render_template, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 
+import hardware
+
 app = Flask(__name__, static_url_path="")
 
 
@@ -47,6 +49,43 @@ def get_locker_by_number(connection, locker_number):
     ).fetchone()
 
 
+# saves whether a locker door is open or closed
+def save_door_status(connection, locker, door_status_value):
+    connection.execute(
+        "UPDATE lockers SET door_status = ? WHERE id = ?",
+        (door_status_value, locker["id"])
+    )
+
+
+    # if the door closes while unlocked, lock it again
+    if door_status_value == "closed" and locker["lock_status"] == "unlocked":
+
+        connection.execute(
+            "UPDATE lockers SET lock_status = 'locked' WHERE id = ?",
+            (locker["id"],)
+        )
+
+
+    connection.commit()
+
+
+# hardware.py calls this when the real door opens or closes
+def door_changed(door_status_value):
+    connection = get_db()
+
+    locker = get_locker_by_number(
+        connection,
+        hardware.REAL_LOCKER
+    )
+
+
+    if locker is not None:
+        save_door_status(connection, locker, door_status_value)
+
+
+    connection.close()
+
+
 # shows the front end (index.html inside the "static" folder)
 @app.route("/")
 def home():
@@ -74,6 +113,19 @@ def list_lockers():
     return jsonify([dict(row) for row in rows])
 
 
+# waits a moment for any card to be tapped on the reader
+# tapped comes back false if nobody tapped, so the page just asks again
+@app.route("/scan-card", methods=["POST"])
+def scan_card():
+    if not hardware.reader_ready():
+        return jsonify({"error": "Card reader is not working"}), 503
+
+
+    return jsonify({
+        "tapped": hardware.wait_for_card() is not None
+    })
+
+
 # creates a new locker rental
 @app.route("/rent", methods=["POST"])
 def rent():
@@ -83,11 +135,10 @@ def rent():
     phone = data.get("phone")
     pin = data.get("pin")
     duration = data.get("duration")
-    card_uid = data.get("card_uid")
 
 
     # checks that nothing was left blank
-    if not name or not phone or not pin or not duration or not card_uid:
+    if not name or not phone or not pin or not duration:
         return jsonify({"error": "Missing information"}), 400
 
 
@@ -103,24 +154,6 @@ def rent():
 
     price = PRICES[duration]
     connection = get_db()
-
-
-    # checks if the card exists
-    card = connection.execute(
-        "SELECT * FROM demo_cards WHERE card_uid = ?",
-        (card_uid,)
-    ).fetchone()
-
-
-    if card is None:
-        connection.close()
-        return jsonify({"error": "Card not recognized"}), 404
-
-
-    # checks the card balance
-    if card["balance"] < price:
-        connection.close()
-        return jsonify({"error": "Not enough balance"}), 402
 
 
     # uses the locker the customer picked (if one was sent), otherwise the first free one
@@ -198,13 +231,6 @@ def rent():
     end = start + timedelta(minutes=MINUTES[duration])
 
 
-    # charges the demo card
-    connection.execute(
-        "UPDATE demo_cards SET balance = balance - ? WHERE card_uid = ?",
-        (price, card_uid)
-    )
-
-
     # saves the rental
     connection.execute(
         """
@@ -237,11 +263,14 @@ def rent():
     connection.close()
 
 
+    # opens the real lock so the customer can use the locker
+    hardware.unlock(locker["locker_number"])
+
+
     return jsonify({
         "locker_number": locker["locker_number"],
         "end_time": end.isoformat(),
-        "amount_paid": price,
-        "new_balance": card["balance"] - price
+        "amount_paid": price
     })
 
 
@@ -326,7 +355,7 @@ def open_locker():
     )
 
 
-    # unlocks the locker in the database for now
+    # unlocks the locker in the database
     connection.execute(
         "UPDATE lockers SET lock_status = 'unlocked' WHERE id = ?",
         (rental["locker_id"],)
@@ -335,6 +364,10 @@ def open_locker():
 
     connection.commit()
     connection.close()
+
+
+    # opens the real lock
+    hardware.unlock(rental["locker_number"])
 
 
     return jsonify({
@@ -352,10 +385,9 @@ def extend_rental():
     phone = data.get("phone")
     pin = data.get("pin")
     duration = data.get("duration")
-    card_uid = data.get("card_uid")
 
 
-    if not phone or not pin or not duration or not card_uid:
+    if not phone or not pin or not duration:
         return jsonify({"error": "Missing information"}), 400
 
 
@@ -412,33 +444,9 @@ def extend_rental():
     price = PRICES[duration]
 
 
-    # checks the card again before charging it
-    card = connection.execute(
-        "SELECT * FROM demo_cards WHERE card_uid = ?",
-        (card_uid,)
-    ).fetchone()
-
-
-    if card is None:
-        connection.close()
-        return jsonify({"error": "Card not recognized"}), 404
-
-
-    if card["balance"] < price:
-        connection.close()
-        return jsonify({"error": "Not enough balance"}), 402
-
-
     # adds the new time onto the current end time
     new_end = end_time + timedelta(
         minutes=MINUTES[duration]
-    )
-
-
-    # charges the card
-    connection.execute(
-        "UPDATE demo_cards SET balance = balance - ? WHERE card_uid = ?",
-        (price, card_uid)
     )
 
 
@@ -459,8 +467,7 @@ def extend_rental():
 
     return jsonify({
         "new_end_time": new_end.isoformat(),
-        "amount_charged": price,
-        "new_balance": card["balance"] - price
+        "amount_charged": price
     })
 
 
@@ -559,22 +566,9 @@ def door_status():
 
 
     # updates the door status
-    connection.execute(
-        "UPDATE lockers SET door_status = ? WHERE id = ?",
-        (door_status_value, locker["id"])
-    )
+    save_door_status(connection, locker, door_status_value)
 
 
-    # if the door closes while unlocked, lock it again
-    if door_status_value == "closed" and locker["lock_status"] == "unlocked":
-
-        connection.execute(
-            "UPDATE lockers SET lock_status = 'locked' WHERE id = ?",
-            (locker["id"],)
-        )
-
-
-    connection.commit()
     connection.close()
 
 
@@ -675,6 +669,10 @@ def admin_unlock():
 
     connection.commit()
     connection.close()
+
+
+    # opens the real lock
+    hardware.unlock(locker["locker_number"])
 
 
     return jsonify({
@@ -862,4 +860,7 @@ def admin_enable():
 
 # starts the server
 if __name__ == "__main__":
-    app.run(debug=True)
+    hardware.start(door_changed)
+
+    # debug mode runs the app twice, which is only safe when no real pins are used
+    app.run(debug=hardware.FAKE_MODE)

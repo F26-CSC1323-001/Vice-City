@@ -7,8 +7,7 @@ response = requests.post(
         "name": "Test User",
         "phone": "3185551234",
         "pin": "1234",
-        "duration": "2hours",
-        "card_uid": "CARD001"
+        "duration": "2hours"
     }
 )
 

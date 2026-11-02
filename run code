@@ -1,0 +1,14 @@
+python3 -m venv --system-site-packages ~/locker-venv
+source ~/locker-venv/bin/activate
+python3 test_nfc.py
+
+
+
+source ~/locker-venv/bin/activate
+cd ~/Desktop/Vice-City
+python3 test_hardware.py
+
+
+# Running app.py
+source ~/locker-venv/bin/activate
+python3 app.py
