@@ -1,4 +1,6 @@
+import os
 import sqlite3
+import time
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, request
@@ -30,8 +32,72 @@ MINUTES = {
 }
 
 
-# temporary admin pin for the prototype
-ADMIN_PIN = "9999"
+# the admin pin is read from the environment so it is not saved in the code
+# start the app with:  ADMIN_PIN=482913 python3 app.py   (9999 is only for testing)
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "9999")
+
+
+# only these routes check a pin, so only these count wrong guesses
+PIN_ROUTES = ("/check-rental", "/open-locker", "/extend-rental", "/end-rental")
+
+
+# after this many wrong pins in a row, everything is refused for a while
+MAX_WRONG_PINS = 5
+LOCKOUT_SECONDS = 300
+
+
+# who is being guessed -> [wrong pins in a row, locked until this time]
+wrong_pins = {}
+
+
+# works out who is being guessed: the admin area, or one phone number
+def guess_target():
+    if request.path.startswith("/admin/"):
+        return "admin"
+
+    if request.path in PIN_ROUTES:
+        data = request.get_json(silent=True)
+
+        if not isinstance(data, dict):
+            data = {}
+
+        return "phone:" + str(data.get("phone"))
+
+    return None
+
+
+# refuses the request while the lockout is running
+@app.before_request
+def block_pin_guessing():
+    entry = wrong_pins.get(guess_target())
+
+    if entry and entry[1] > time.time():
+        return jsonify({
+            "error": "Too many wrong attempts. Try again in 5 minutes."
+        }), 429
+
+
+# the pin routes answer 401 for a wrong pin, so count those
+# a correct answer (200) clears the count
+@app.after_request
+def count_wrong_pins(response):
+    target = guess_target()
+
+    if target is None:
+        return response
+
+    if response.status_code == 401:
+        entry = wrong_pins.setdefault(target, [0, 0])
+        entry[0] = entry[0] + 1
+
+        if entry[0] >= MAX_WRONG_PINS:
+            entry[0] = 0
+            entry[1] = time.time() + LOCKOUT_SECONDS
+
+    elif response.status_code == 200:
+        wrong_pins.pop(target, None)
+
+    return response
 
 
 # opens the database
@@ -615,6 +681,11 @@ def end_rental():
 # updates whether a locker door is open or closed
 @app.route("/door-status", methods=["POST"])
 def door_status():
+
+    # on the Pi the real sensor reports the door, so nobody can fake it over the network
+    if not hardware.FAKE_MODE:
+        return jsonify({"error": "Not found"}), 404
+
     data = request.get_json()
 
     locker_number = data.get("locker_number")

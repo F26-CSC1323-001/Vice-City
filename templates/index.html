@@ -11,14 +11,13 @@
     <!-- Header with Logo and Navigation -->
     <header class="top">
       <div class="logo">
-        <div class="logo-mark">🔒</div>
         <span>SMARTLOCK</span>
       </div>
       <div class="top-right">
         <span class="dot"></span>
         <span class="cap muted">System online</span>
         <button id="homeBtn" class="btn secondary home" data-go="welcome" hidden>
-          🏠 Home
+          Home
         </button>
       </div>
     </header>
@@ -32,8 +31,8 @@
           <p class="subtitle muted">Choose how you'd like to continue</p>
         </div>
         <div class="actions">
-          <button class="btn primary lg" data-go="home">👤 Customer</button>
-          <button class="btn secondary lg" data-go="admin-login">🛡️ Administrator</button>
+          <button class="btn primary lg" data-go="home">Customer</button>
+          <button class="btn secondary lg" data-go="admin-login">Administrator</button>
         </div>
       </div>
     </section>
@@ -71,7 +70,7 @@
         <!-- View when no lockers are available -->
         <div id="chooseNone" class="empty" hidden>
           <div class="panel">
-            <p class="body strong">🔒 All lockers are currently in use</p>
+            <p class="body strong">All lockers are currently in use</p>
             <div id="earliestBox">
               <p class="cap muted">Earliest availability in</p>
               <div class="price accent" id="earliest"></div>
@@ -130,7 +129,11 @@
     <section class="screen compact" data-screen="payment">
       <div class="center-col">
         <h1 class="title">Tap your card to pay</h1>
-        <div class="pay-icon mt5">📶</div>
+        <div class="pay-icon mt5">
+          <span class="pulse"></span>
+          <span class="pulse" style="animation-delay:.7s"></span>
+          NFC
+        </div>
         <div class="price mt4">Total: <span id="payTotal"></span></div>
         <p class="cap muted">Demo card only. No real payment.</p>
       </div>
@@ -226,7 +229,11 @@
     <section class="screen compact" data-screen="extend-payment">
       <div class="center-col">
         <h1 class="title">Tap your card to pay</h1>
-        <div class="pay-icon mt5">📶</div>
+        <div class="pay-icon mt5">
+          <span class="pulse"></span>
+          <span class="pulse" style="animation-delay:.7s"></span>
+          NFC
+        </div>
         <div class="price mt4">Extension: <span id="exPayTotal"></span></div>
         <p class="cap muted" id="exPayNote"></p>
         <p class="cap muted">Demo card only. No real payment.</p>
@@ -247,7 +254,6 @@
     <section class="screen compact" data-screen="admin-login">
       <div class="col form">
         <div class="center">
-          <div class="badge-circle tint">🛡️</div>
           <h1 class="title center">Administrator Login</h1>
         </div>
         <div class="grid2 mt5 gap4">
