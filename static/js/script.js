@@ -404,7 +404,7 @@ function render() {
   }
 
   if (state.screen === "success") {
-    setText("#sTitle", "Locker " + state.rental.id + " is open");
+    setText("#sTitle", "Locker " + state.rental.id + " is reserved");
     setText("#sEnd", formatTime(state.rental.end));
     setText("#sDur", state.duration);
   }
@@ -506,9 +506,9 @@ async function submitRental() {
   state.rental = {
     id: String(result.data.locker_number),
     end: parseServerTime(result.data.end_time),
-    unlocked: true
+    unlocked: false
   };
-  goToScreen("success");
+  goToScreen("rental");
 }
 
 // Sends the extra time to the back end (called after the extension "tap your card" screen)
