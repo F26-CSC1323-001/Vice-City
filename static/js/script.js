@@ -658,7 +658,11 @@ function buildKeyboard(numbersOnly) {
   return html;
 }
 
+const show_keyboard = false;
 function showKeyboard(input) {
+if(!show_keyboard){
+  return;
+}
   activeInput = input;
   const numbersOnly = input.type === "tel" || input.getAttribute("inputmode") === "numeric";
   const keyboard = getElement("#keyboard");
