@@ -652,11 +652,7 @@ function buildKeyboard(numbersOnly) {
   return html;
 }
 
-const screen_keyboard = false;
 function showKeyboard(input) {
-  if(!screen_keyboard){
-    return;
-  }
   activeInput = input;
   const numbersOnly = input.type === "tel" || input.getAttribute("inputmode") === "numeric";
   const keyboard = getElement("#keyboard");
@@ -771,11 +767,11 @@ document.addEventListener("click", async function(event) {
     goToScreen("duration");
     return;
   } else if (action === "login") {
-    // customer login: the back end checks the phone + PIN and unlocks the locker
+    // customer login: the back end only checks the phone + PIN, the locker stays closed
     const phone = cleanPhone(getElement("#loginPhone").value);
     const pin = getElement("#loginPin").value;
 
-    const result = await callServer("/open-locker", "POST", { phone: phone, pin: pin });
+    const result = await callServer("/check-rental", "POST", { phone: phone, pin: pin });
     if (!result.ok) {
       showError(result);
       return;
@@ -786,7 +782,7 @@ document.addEventListener("click", async function(event) {
     state.rental = {
       id: String(result.data.locker_number),
       end: parseServerTime(result.data.end_time),
-      unlocked: true
+      unlocked: false
     };
     goToScreen("rental");
     return;

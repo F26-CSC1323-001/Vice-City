@@ -274,6 +274,80 @@ def rent():
     })
 
 
+# checks the phone + pin at login WITHOUT opening the locker
+@app.route("/check-rental", methods=["POST"])
+def check_rental():
+    data = request.get_json()
+
+    phone = data.get("phone")
+    pin = data.get("pin")
+
+
+    if not phone or not pin:
+        return jsonify({"error": "Missing information"}), 400
+
+
+    connection = get_db()
+
+
+    user = connection.execute(
+        "SELECT * FROM users WHERE phone = ?",
+        (phone,)
+    ).fetchone()
+
+
+    if user is None or not check_password_hash(user["pin_hash"], pin):
+        connection.close()
+
+        return jsonify({
+            "error": "Phone number or PIN is incorrect"
+        }), 401
+
+
+    rental = connection.execute(
+        """
+        SELECT rentals.*, lockers.locker_number
+        FROM rentals
+        JOIN lockers ON rentals.locker_id = lockers.id
+        WHERE rentals.user_id = ?
+        AND rentals.status = 'active'
+        """,
+        (user["id"],)
+    ).fetchone()
+
+
+    if rental is None:
+        connection.close()
+
+        return jsonify({
+            "error": "No active rental found"
+        }), 404
+
+
+    # stops access if the rental already expired
+    if datetime.now() >= datetime.fromisoformat(rental["end_time"]):
+        connection.execute(
+            "UPDATE rentals SET status = 'expired' WHERE id = ?",
+            (rental["id"],)
+        )
+
+        connection.commit()
+        connection.close()
+
+        return jsonify({
+            "error": "Rental expired",
+            "expired_at": rental["end_time"]
+        }), 410
+
+
+    connection.close()
+
+    return jsonify({
+        "locker_number": rental["locker_number"],
+        "end_time": rental["end_time"]
+    })
+
+
 # lets a user get back into their locker
 @app.route("/open-locker", methods=["POST"])
 def open_locker():
