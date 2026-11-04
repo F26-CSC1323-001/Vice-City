@@ -420,15 +420,21 @@ function render() {
       timeText = hours + "h " + timeText;
     }
 
-    let statusText = "Rental active";
-    if (locker.unlocked) {
-      statusText = "Door unlocked";
+    // the badge shows what the magnetic door sensor reads
+    let statusText = "Checking door...";
+    if (locker.doorOpen === true) {
+      statusText = "Door open";
+    } else if (locker.doorOpen === false) {
+      statusText = "Door closed";
     }
 
     setText("#rTitle", "Locker " + locker.id);
     setText("#rBadge", statusText);
     setText("#rTime", timeText);
     setText("#rEnd", formatTime(locker.end));
+
+    // the Unlock button is greyed out and cannot be pressed while the door is open
+    getElement("#doorBtn").disabled = locker.doorOpen === true;
   }
 
   if (state.screen === "extend") {
@@ -869,6 +875,22 @@ document.addEventListener("click", async function(event) {
   render();
 });
 
+// Asks the back end if the door of the customer's locker is open or closed
+async function refreshDoor() {
+  const result = await callServer("/lockers", "GET");
+  if (!result.ok || state.screen !== "rental" || state.rental === null) {
+    return;
+  }
+
+  for (let i = 0; i < result.data.length; i = i + 1) {
+    const row = result.data[i];
+    if (String(row.locker_number) === state.rental.id) {
+      state.rental.doorOpen = row.door_status === "open";
+    }
+  }
+  render();
+}
+
 // Update display automatically every second for timers
 let refreshCounter = 0;
 setInterval(function() {
@@ -889,6 +911,11 @@ setInterval(function() {
     } else if (state.screen === "admin") {
       loadLockers(adminLockersPath(), false);
     }
+  }
+
+  // every second, read the door sensor state on the rental screen
+  if (state.screen === "rental") {
+    refreshDoor();
   }
 }, 1000);
 

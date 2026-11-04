@@ -381,6 +381,12 @@ button{
   opacity:.4;
   cursor:not-allowed
 }
+#doorBtn:disabled{
+  background:#55626d;
+  color:var(--muted-bright);
+  box-shadow:none;
+  opacity:.8
+}
 .primary{
   background:var(--accent);
   color:var(--ink);
