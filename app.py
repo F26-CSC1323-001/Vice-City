@@ -318,7 +318,7 @@ def rent():
     connection.execute(
         """
         UPDATE lockers
-        SET status = 'occupied', lock_status = 'unlocked'
+        SET status = 'occupied', lock_status = 'locked'
         WHERE id = ?
         """,
         (locker["id"],)
@@ -329,8 +329,7 @@ def rent():
     connection.close()
 
 
-    # opens the real lock so the customer can use the locker
-    hardware.unlock(locker["locker_number"])
+    # the locker stays locked after paying, the customer opens it with the Unlock button
 
 
     return jsonify({
